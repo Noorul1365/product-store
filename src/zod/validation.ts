@@ -30,3 +30,15 @@ export const createWarehouseSchema = z.object({
 export const updateWarehouseSchemaWithId = createWarehouseSchema.partial().extend({
   id: z.string().min(1, "Warehouse ID is required"),
 });
+
+export const createProductSchema = z.object({
+  productName: z.string().min(2),
+  price: z.number().min(0),
+  quantity: z.number().min(0),
+  description: z.string().optional(),
+  warehouseId: z.string().min(1),
+});
+
+export const updateProductSchema = createProductSchema.partial().extend({
+  id: z.string().min(1),
+});

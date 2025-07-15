@@ -25,6 +25,10 @@ const warehouseSchema = new Schema<Warehouse>(
       required: true,
       min: 0,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    }
   },
   { timestamps: true }
 );

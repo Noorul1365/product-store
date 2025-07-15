@@ -2,6 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes";
 import warehouseRoutes from "./routes/warehouse";
+import productRoutes from "./routes/product";
+import orderRoutes from "./routes/order";
 import mongoose from "mongoose";
 import connectDB from "./config/db";
 import { errorHandler } from './utils/error';
@@ -16,6 +18,8 @@ connectDB();
 app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/warehouse", warehouseRoutes);
+app.use("/api/product", productRoutes);
+app.use("/api/order", orderRoutes);
 app.use(cookieParser());
 
 app.get("/", (req, res) => {

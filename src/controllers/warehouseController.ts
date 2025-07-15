@@ -95,6 +95,26 @@ class WarehouseController {
 
         return responseHandler(res, 200, 'Warehouse updated successfully', updatedWarehouse);
     })
+
+    delete = asyncHandler(async (req: Request, res: Response) => {
+        const { id } = req.body;
+
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return responseHandler(res, 400, 'Invalid or missing warehouse ID');
+        }
+
+        const warehouse = await warehouseModel.findByIdAndUpdate(
+            id,
+            { isDeleted: true },
+            { new: true }
+        );
+
+        if (!warehouse) {
+            return responseHandler(res, 404, 'Warehouse not found');
+        }
+
+        return responseHandler(res, 200, 'Warehouse soft-deleted successfully', warehouse);
+    })
 }
 
 export default new WarehouseController();

@@ -10,6 +10,7 @@ warehouseRouter.post("/create", WarehouseController.createWarehouse);
 warehouseRouter.get("/getAll", WarehouseController.getAll);
 warehouseRouter.get("/details", WarehouseController.getById);
 warehouseRouter.put("/update", WarehouseController.update);
+warehouseRouter.delete("/delete", WarehouseController.delete);
 
 
 export default warehouseRouter;
