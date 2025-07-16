@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Chat Tester</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #0056b3; }
+        input[type="text"], textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background-color: #0056b3; }
+        .messages {
+            border: 1px solid #eee;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .message-item {
+            margin-bottom: 8px;
+            padding: 5px;
+            background-color: #fff;
+            border-radius: 4px;
+        }
+        .message-item strong { color: #28a745; }
+        .message-item span { font-size: 0.8em; color: #6c757d; float: right; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Socket.IO Chat Tester</h1>
+        <p>Your Server is expected at: <strong id="serverUrl">ws://localhost:3001</strong></p>
+        <hr>
+
+        <h2>1. Connection & Room Setup</h2>
+        <label for="userId">Your User ID:</label><br>
+        <input type="text" id="userId" placeholder="e.g., user1"><br>
+
+        <label for="roomId">Room ID (e.g., user1-user2):</label><br>
+        <input type="text" id="roomId" placeholder="e.g., user1-user2"><br>
+
+        <button id="joinRoomButton">Join Room</button>
+        <p id="connectionStatus" style="color: grey;">Not Connected</p>
+        <hr>
+
+        <h2>2. Send Message</h2>
+        <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea><br>
+        <button id="sendMessageButton">Send Message</button>
+        <hr>
+
+        <h2>3. Received Messages</h2>
+        <div id="messagesDisplay" class="messages">
+            </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const serverUrl = 'http://localhost:3000'; // Make sure this matches your server's port!
+        document.getElementById('serverUrl').textContent = serverUrl;
+
+        let socket; // This will hold our socket connection
+        let currentUserId = '';
+        let currentRoomId = '';
+
+        const connectionStatus = document.getElementById('connectionStatus');
+        const userIdInput = document.getElementById('userId');
+        const roomIdInput = document.getElementById('roomId');
+        const joinRoomButton = document.getElementById('joinRoomButton');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageButton = document.getElementById('sendMessageButton');
+        const messagesDisplay = document.getElementById('messagesDisplay');
+
+        // --- Connection Logic ---
+        joinRoomButton.addEventListener('click', () => {
+            currentUserId = userIdInput.value.trim();
+            currentRoomId = roomIdInput.value.trim();
+
+            if (!currentUserId || !currentRoomId) {
+                alert('Please enter both User ID and Room ID.');
+                return;
+            }
+
+            // If socket already exists and is connected, disconnect first
+            if (socket && socket.connected) {
+                socket.disconnect();
+                connectionStatus.textContent = 'Disconnected, rejoining...';
+            }
+
+            // Initialize Socket.IO connection
+            // The path and query parameters are handled by the client library if you just give the base URL
+            socket = io(serverUrl, {
+                query: {
+                    userId: currentUserId // You can pass user ID here for authentication on server-side later
+                }
+            });
+
+            // Socket Events
+            socket.on('connect', () => {
+                connectionStatus.textContent = `Connected! Socket ID: ${socket.id}`;
+                connectionStatus.style.color = 'green';
+                console.log('Socket connected:', socket.id);
+
+                // Emit 'room-join' event
+                socket.emit('room-join', { roomId: currentRoomId });
+                console.log(`Attempting to join room: ${currentRoomId}`);
+            });
+
+            socket.on('disconnect', () => {
+                connectionStatus.textContent = 'Disconnected.';
+                connectionStatus.style.color = 'red';
+                console.log('Socket disconnected.');
+            });
+
+            socket.on('connect_error', (error) => {
+                connectionStatus.textContent = `Connection Error: ${error.message}`;
+                connectionStatus.style.color = 'red';
+                console.error('Socket connection error:', error);
+            });
+
+            // --- Receive Message Event ---
+            socket.on('rcv_message', (data) => {
+                console.log('Received message:', data);
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message-item');
+                // Displaying sender ID as it comes from server
+                const senderDisplay = (data.senderId === currentUserId) ? 'Me' : data.senderId;
+                messageElement.innerHTML = `<strong>${senderDisplay}:</strong> ${data.message} <span>${new Date(data.createdAt).toLocaleTimeString()}</span>`;
+                messagesDisplay.appendChild(messageElement);
+                messagesDisplay.scrollTop = messagesDisplay.scrollHeight; // Scroll to bottom
+            });
+
+            // You can add more listeners here for server acknowledgments or other events
+            socket.on('error', (errorMessage) => {
+                console.error('Server error:', errorMessage);
+                alert('Server error: ' + errorMessage);
+            });
+        });
+
+        // --- Send Message Logic ---
+        sendMessageButton.addEventListener('click', () => {
+            const messageText = messageInput.value.trim();
+            if (messageText && socket && socket.connected && currentRoomId && currentUserId) {
+                socket.emit('send-message', {
+                    message: messageText,
+                    room: currentRoomId,
+                    // Note: senderId is derived on server from room, but you can also send it
+                    // The server determines the senderId from the room, so it's consistent.
+                    // For more robust authentication, the server should ideally get senderId from a JWT or session.
+                });
+                messageInput.value = ''; // Clear input after sending
+            } else if (!socket || !socket.connected) {
+                alert('Not connected to server. Please join a room first.');
+            } else if (!messageText) {
+                alert('Message cannot be empty.');
+            }
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { // Send on Enter, allow Shift+Enter for new line
+                sendMessageButton.click();
+                e.preventDefault(); // Prevent new line in textarea on Enter
+            }
+        });
+    </script>
+</body>
+</html>

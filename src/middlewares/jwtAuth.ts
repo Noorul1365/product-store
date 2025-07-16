@@ -27,7 +27,7 @@ export const userAuth = async(req: AuthRequest,res: Response,next: NextFunction)
       req.headers.authorization|| // Bearer token
       req.cookies?.token; // Cookie token
 
-    console.log("Token:", token);
+    // console.log("Token:", token);
 
     if (!token) {
       return res
