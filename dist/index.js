@@ -1,0 +1,42 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const http_1 = __importDefault(require("http"));
+const path_1 = __importDefault(require("path"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
+const warehouse_1 = __importDefault(require("./routes/warehouse"));
+const product_1 = __importDefault(require("./routes/product"));
+const order_1 = __importDefault(require("./routes/order"));
+const conversation_1 = __importDefault(require("./routes/conversation"));
+const message_1 = __importDefault(require("./routes/message"));
+const db_1 = __importDefault(require("./config/db"));
+const error_1 = require("./utils/error");
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const socket_1 = require("./socket");
+dotenv_1.default.config();
+const app = (0, express_1.default)();
+const PORT = process.env.PORT || 3000;
+(0, db_1.default)();
+const server = http_1.default.createServer(app);
+// registerSocketServer(server);
+app.use(express_1.default.static(path_1.default.join(__dirname, './public')));
+app.use(express_1.default.json());
+app.use("/api/users", userRoutes_1.default);
+app.use("/api/warehouse", warehouse_1.default);
+app.use("/api/product", product_1.default);
+app.use("/api/order", order_1.default);
+app.use("/api/conversation", conversation_1.default);
+app.use("/api/message", message_1.default);
+app.use((0, cookie_parser_1.default)());
+app.get("/", (req, res) => {
+    res.send("Hello from TypeScript + Express");
+});
+(0, socket_1.registerSocketServer)(server);
+app.use(error_1.errorHandler);
+server.listen(PORT, () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+});
