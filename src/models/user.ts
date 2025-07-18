@@ -3,6 +3,9 @@ import mongoose from "mongoose";
 import { User } from "../types/types"; // Adjust the import path as necessary
 
 const userSchema = new mongoose.Schema<User>({
+    facebookId: {
+       type: String, 
+    },
     name: {
         type: String,
     },
